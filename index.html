@@ -395,10 +395,6 @@
     .qchips button{border:1px solid #94d2bd;background:#e9f5f2;color:#005f73;border-radius:12px;padding:2px 8px;font-size:11px;cursor:pointer}
     .qchips button:hover{background:#0a9396;color:#fff}
     .inv-sig{display:none}
-    body.measure-inv .left-panel .sec:not(#invSec),body.measure-inv .rx-right,body.measure-inv #calcNotes,body.measure-inv .hide-header-on-pad{display:none!important}
-    body.measure-inv .rx-body{grid-template-columns:1fr;min-height:0}
-    body.measure-inv .left-panel{border-right:none}
-    body.measure-inv .inv-sig{display:block}
     .ch2{display:inline-flex}
     .qchips .ch2 button:first-child{border-radius:12px 0 0 12px}
     .qchips .ch2 button:last-child{border-radius:0 12px 12px 0;border-left:none;color:#d00000;background:#fff;padding:2px 6px}
@@ -408,13 +404,15 @@
     .left-panel textarea{line-height:1.5;overflow:hidden}
     .left-panel .sec{margin-bottom:6px}
     @media print{.chip .btn{display:none}::placeholder{color:transparent!important}.left-panel textarea{margin-bottom:6px}
-      body.no-inv-rx #invSec{display:none!important}
-      body.printing-inv .left-panel .sec:not(#invSec),body.printing-inv .rx-right,body.printing-inv #calcNotes{display:none!important}
-      body.printing-inv .rx-body{grid-template-columns:1fr;min-height:0}
-      body.printing-inv .left-panel{border-right:none}
-      body.printing-inv .inv-sig{display:block!important}
-      body.rx-below #rxHeaderBlock,body.rx-below .patient-bar,body.rx-below #invSec{display:none!important}
-      body.rx-below #rxMainView{padding-top:var(--rx-offset,0mm)}}
+      .left-panel textarea,#advice{resize:none!important;overflow:hidden!important}
+      @supports (field-sizing:content){.left-panel textarea,#advice{height:auto!important;field-sizing:content}}
+      body.hide-cc #ccSec,body.hide-oe #oeSec,body.hide-inv #invSec,body.hide-dx #dxSec{display:none!important}
+      body.hide-all-left .left-panel{display:none!important}
+      body.hide-all-left .rx-body{grid-template-columns:1fr;min-height:0}
+      body.printing-inv .left-panel .sec:not(#ccSec):not(#oeSec):not(#invSec),body.printing-inv #calcNotes{display:none!important}
+      body.printing-inv .rx-right{visibility:hidden;height:0;overflow:hidden}
+      body.rx-below #rxHeaderBlock,body.rx-below .patient-bar,body.rx-below #ccSec,body.rx-below #oeSec,body.rx-below #invSec{visibility:hidden}
+      body.rx-below .left-panel{border-right-color:transparent}}
   </style>
 
   <div class="container">
@@ -438,10 +436,10 @@
         </div>
         <div class="rx-body">
           <div class="left-panel">
-            <div class="sec"><h4>Chief Complaints</h4>
+            <div class="sec" id="ccSec"><h4>Chief Complaints</h4>
               <div class="qchips no-print" data-t="cc"></div>
               <textarea id="cc" rows="3" placeholder="• Fever for 3 days"></textarea></div>
-            <div class="sec"><h4>Examination</h4>
+            <div class="sec" id="oeSec"><h4>Examination</h4>
               <div class="vitals">
                 <div class="vit"><label>BP (mmHg)</label><input id="v_bp" placeholder="120/80"></div>
                 <div class="vit"><label>Pulse (/min)</label><input id="v_pulse"></div>
@@ -454,7 +452,7 @@
             <div class="sec" id="invSec"><h4>Investigation</h4>
               <div class="qchips no-print" data-t="inv"></div>
               <textarea id="inv" rows="3" placeholder="• CBC"></textarea></div>
-            <div class="sec"><h4>Diagnosis</h4><textarea id="dx" rows="2"></textarea></div>
+            <div class="sec" id="dxSec"><h4>Diagnosis</h4><textarea id="dx" rows="2"></textarea></div>
           </div>
           <div class="rx-right">
             <div class="rx-title-bar"><span class="rx-symbol">&#8478;</span><button type="button" class="btn btn-add no-print" onclick="addRow()">+ Add Medicine</button></div>
@@ -484,10 +482,14 @@
         <div class="btn-group">
           <button type="button" class="btn btn-primary" onclick="newRx()">New</button>
           <button type="button" class="btn btn-save" onclick="savePatient()">Save</button>
-          <label style="font-size:12px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="invOnRx" style="width:auto" checked> Investigation in Rx</label>
+          <span style="font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>Rx shows:</b>
+            <label><input type="checkbox" class="rxShow" data-k="cc" style="width:auto"> Complaints</label>
+            <label><input type="checkbox" class="rxShow" data-k="oe" style="width:auto"> Examination</label>
+            <label><input type="checkbox" class="rxShow" data-k="inv" style="width:auto"> Investigation</label>
+            <label><input type="checkbox" class="rxShow" data-k="dx" style="width:auto"> Diagnosis</label></span>
           <button type="button" class="btn btn-print" onclick="printRx()">Print Rx</button>
           <button type="button" class="btn btn-print" onclick="printInv()">Print Investigation</button>
-          <button type="button" class="btn btn-print" onclick="printRxBelow()">Print Rx below Investigation</button>
+          <button type="button" class="btn btn-print" onclick="printRxBelow()">Print Rx on same sheet</button>
           <button type="button" class="btn btn-receipt" onclick="printReceipt()">Print Receipt</button>
         </div>
       </div>
@@ -573,7 +575,6 @@
         <div class="form-group"><label>Bottom margin (mm)</label><input type="number" id="m_bottom" min="0"></div>
         <div class="form-group"><label>Left margin (mm)</label><input type="number" id="m_left" min="0"></div>
         <div class="form-group"><label>Right margin (mm)</label><input type="number" id="m_right" min="0"></div>
-        <div class="form-group"><label>Gap for "Rx below Investigation" (mm)</label><input type="number" id="m_gap" min="0"></div>
       </div>
       <label style="font-size:14px"><input type="checkbox" id="m_hide" style="width:auto"> Hide doctor header when printing (pre-printed pad)</label>
       <div style="margin-top:15px"><button type="button" class="btn btn-save" onclick="savePrint()">Save Settings</button></div>
@@ -620,14 +621,14 @@ function applyPrint(){
   ['top','bottom','left','right'].forEach(k=>r.setProperty('--print-'+k+'-margin',(ps[k]??10)+'mm'));
   $('rxHeaderBlock').classList.toggle('hide-header-on-pad',!!ps.hide);
   ['top','bottom','left','right'].forEach(k=>$('m_'+k).value=ps[k]);
-  $('m_hide').checked=!!ps.hide; $('m_gap').value=ps.gap??4;
+  $('m_hide').checked=!!ps.hide;
 }
 function savePrint(){
   ['top','bottom','left','right'].forEach(k=>ps[k]=Math.max(0,+$('m_'+k).value||0));
-  ps.hide=$('m_hide').checked; ps.gap=Math.max(0,+$('m_gap').value||0); store('rx_print',ps); applyPrint(); alert('Print settings saved');
+  ps.hide=$('m_hide').checked; store('rx_print',ps); applyPrint(); alert('Print settings saved');
 }
 window.addEventListener('beforeprint',()=>document.querySelectorAll('#medBody tr').forEach(r=>{if(!r.querySelector('.m-name').value.trim())r.classList.add('hide-empty-meds')}));
-window.addEventListener('afterprint',()=>{document.querySelectorAll('.hide-empty-meds').forEach(r=>r.classList.remove('hide-empty-meds'));document.body.classList.remove('printing-receipt','printing-inv','no-inv-rx','rx-below')});
+window.addEventListener('afterprint',()=>{document.querySelectorAll('.hide-empty-meds').forEach(r=>r.classList.remove('hide-empty-meds'));document.body.classList.remove('printing-receipt','printing-inv','rx-below','hide-cc','hide-oe','hide-inv','hide-dx','hide-all-left')});
 
 /* Medicine database */
 function renderMeds(){
@@ -740,10 +741,12 @@ function addLine(id,txt){
 });
 document.querySelectorAll('.left-panel textarea,#advice').forEach(t=>t.addEventListener('input',()=>grow(t)));
 const isEmpty=el=>[...el.querySelectorAll('input,textarea')].every(i=>!i.value.replace(/•/g,'').trim());
-window.addEventListener('beforeprint',()=>{
+function markEmpty(){
   growAll();
   document.querySelectorAll('.left-panel .sec,.left-panel .vit,.adv-sec').forEach(el=>{if(isEmpty(el))el.classList.add('hide-empty-meds')});
-});
+  document.querySelectorAll('.left-panel textarea').forEach(t=>{if(!t.value.replace(/•/g,'').trim())t.classList.add('hide-empty-meds')});
+}
+window.addEventListener('beforeprint',markEmpty);
 
 /* Saved advice / next-visit lists */
 const defLib={advice:['প্রচুর পানি পান করুন','পর্যাপ্ত বিশ্রাম নিন','নিয়মিত ঔষধ সেবন করুন','তৈলাক্ত ও মসলাযুক্ত খাবার এড়িয়ে চলুন','সমস্যা বাড়লে দ্রুত যোগাযোগ করুন'],next:['৭ দিন পর','১৪ দিন পর','১ মাস পর','রিপোর্টসহ দেখা করবেন']};
@@ -897,25 +900,27 @@ function restoreAll(inp){
 }
 
 /* Separate prints */
-function printRx(){document.body.classList.toggle('no-inv-rx',!$('invOnRx').checked);window.print()}
+const LEFT=['cc','oe','inv','dx'];
+function printRx(){
+  const on={}; document.querySelectorAll('.rxShow').forEach(c=>on[c.dataset.k]=c.checked);
+  LEFT.forEach(k=>document.body.classList.toggle('hide-'+k,!on[k]));
+  document.body.classList.toggle('hide-all-left',!LEFT.some(k=>on[k]));
+  window.print();
+}
+const noLeftData=()=>['ccSec','oeSec','invSec'].every(id=>isEmpty($(id)));
 function printInv(){
-  if(isEmpty($('invSec'))){alert('Investigation is empty');return}
+  if(noLeftData()){alert('Complaints, Examination and Investigation are all empty');return}
   document.body.classList.add('printing-inv'); window.print();
 }
-$('invOnRx').checked=load('rx_invOnRx',true);
-$('invOnRx').addEventListener('change',()=>store('rx_invOnRx',$('invOnRx').checked));
+const showSet=load('rx_show',{cc:true,oe:true,inv:true,dx:true});
+document.querySelectorAll('.rxShow').forEach(c=>{
+  c.checked=showSet[c.dataset.k]!==false;
+  c.addEventListener('change',()=>{showSet[c.dataset.k]=c.checked;store('rx_show',showSet)});
+});
 
-/* Rx on the same sheet, below an already-printed Investigation */
-function invBlockMm(){
-  const el=$('rxMainView'),b=document.body;
-  b.classList.add('measure-inv'); el.style.width=(210-(ps.left||0)-(ps.right||0))+'mm'; growAll();
-  const h=el.offsetHeight;
-  el.style.width=''; b.classList.remove('measure-inv'); growAll();
-  return h*25.4/96;
-}
+/* Rx on the same sheet: same layout as the Investigation print, left side kept invisible so the Rx lands in the right column */
 function printRxBelow(){
-  if(isEmpty($('invSec'))){alert('Investigation is empty - nothing printed above to place the Rx below');return}
-  document.documentElement.style.setProperty('--rx-offset',(invBlockMm()+(ps.gap??4)).toFixed(1)+'mm');
+  if(noLeftData()){alert('Nothing was printed on the left (Complaints/Examination/Investigation empty)');return}
   document.body.classList.add('rx-below'); window.print();
 }
 
