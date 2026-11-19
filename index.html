@@ -385,6 +385,7 @@
   </div>
 
   <datalist id="medicineSuggestions"></datalist>
+  <datalist id="doseList"><option value="1+0+1"><option value="0+1+0"><option value="0+0+1"><option value="1+0+0"><option value="1+1+1"></datalist>
   <datalist id="durList"><option value="৩ দিন"><option value="৫ দিন"><option value="৭ দিন"><option value="১০ দিন"><option value="১৪ দিন"><option value="১ মাস"><option value="২ মাস"><option value="৩ মাস"><option value="চলবে"></datalist>
   <datalist id="insList"><option value="খাওয়ার আগে"><option value="খাওয়ার পরে"><option value="খালি পেটে"><option value="রাতে ঘুমানোর আগে"><option value="প্রয়োজনে"></datalist>
   <style>
@@ -458,7 +459,7 @@
             <div class="rx-title-bar"><span class="rx-symbol">&#8478;</span><button type="button" class="btn btn-add no-print" onclick="addRow()">+ Add Medicine</button></div>
             <div class="table-responsive">
               <table id="medTable">
-                <thead><tr><th style="width:30px">#</th><th>Medicine</th><th>Dose</th><th>Duration</th><th>Instruction</th><th class="no-print"></th></tr></thead>
+                <thead><tr><th style="width:30px">#</th><th>Medicine</th><th>Dose</th><th>Instruction</th><th>Duration</th><th class="no-print"></th></tr></thead>
                 <tbody id="medBody"></tbody>
               </table>
             </div>
@@ -665,9 +666,9 @@ function addRow(m={}){
   const tr=document.createElement('tr');
   tr.innerHTML=`<td class="sn"></td>
   <td><input class="m-name" list="medicineSuggestions" value="${esc(m.name)}"></td>
-  <td><input class="m-dose" value="${esc(m.dose)}" placeholder="1+0+1"></td>
-  <td><input class="m-dur" list="durList" value="${esc(m.dur)}" placeholder="৭ দিন"></td>
+  <td><input class="m-dose" list="doseList" value="${esc(m.dose)}" placeholder="1+0+1"></td>
   <td><input class="m-ins" list="insList" value="${esc(m.ins)}" placeholder="খাওয়ার পরে"></td>
+  <td><input class="m-dur" list="durList" value="${esc(m.dur)}" placeholder="৭ দিন"></td>
   <td class="no-print"><button type="button" class="btn btn-danger" onclick="this.closest('tr').remove();renum()">&times;</button></td>`;
   $('medBody').appendChild(tr); renum();
 }
@@ -846,7 +847,7 @@ function refreshCalc(){
       const r=calcDose(d,name,ctx);
       if(r.err){notes.push([1,d.key+': '+r.err]);return}
       const di=tr.querySelector('.m-dose');
-      if(!di.value.trim()||tr.dataset.auto==='1'){di.value=r.text;tr.dataset.auto='1'}
+      if(!tr.dataset.manual&&(!di.value.trim()||tr.dataset.auto==='1')){di.value=r.text;tr.dataset.auto='1'}
       notes.push([0,`${d.key}: ${ctx.w} kg × ${d.mgkg} mg/kg = ${Math.round(r.mg0)} mg/dose → ${Math.round(r.real)} mg/dose, ${Math.round(r.day)} mg/day`+(r.maxDayMg?` (limit ${Math.round(r.maxDayMg)} mg/day)`:'')+(r.capped?' [capped at limit]':'')]);
       if(ctx.ageM!=null&&d.minM&&ctx.ageM<d.minM)notes.push([1,`${d.key}: age is below ${d.minM} month(s) - verify before prescribing`]);
     });
@@ -854,8 +855,8 @@ function refreshCalc(){
   }
   box.innerHTML=notes.map(([w,t])=>`<div style="color:${w?'#d00000':'#555'}">${w?'⚠ ':'• '}${esc(t)}</div>`).join('');
 }
-$('medBody').addEventListener('change',e=>{if(e.target.classList.contains('m-name'))refreshCalc()});
-$('medBody').addEventListener('input',e=>{if(e.target.classList.contains('m-dose'))e.target.closest('tr').dataset.auto=''});
+$('medBody').addEventListener('change',e=>{if(e.target.classList.contains('m-name')){e.target.closest('tr').dataset.manual='';refreshCalc()}});
+$('medBody').addEventListener('input',e=>{if(e.target.classList.contains('m-dose')){const t=e.target.closest('tr');t.dataset.auto='';t.dataset.manual='1'}});
 ['v_wt','pAge'].forEach(id=>$(id).addEventListener('input',refreshCalc));
 
 const fCols=[['key','Drug','text'],['match','Match words (comma)','text'],['skip','Skip words','text'],['mgkg','mg/kg/dose','number'],['f','Doses/day','number'],['maxDay','Max mg/kg/day','number'],['adult','Adult max mg/dose','number'],['syr','Syrup mg/5ml','number'],['tab','Tablet mg','number'],['minM','Min age (months)','number']];
