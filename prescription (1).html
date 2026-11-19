@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor Prescription, Investigation & Receipt System</title>
+  <style>
+    :root {
+      --print-top-margin: 10mm;
+      --print-bottom-margin: 10mm;
+      --print-left-margin: 10mm;
+      --print-right-margin: 10mm;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background-color: #eef2f6;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    .navbar {
+      background-color: #005f73;
+      padding: 12px 15px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 8px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      background: #0a9396;
+      border-color: white;
+    }
+    .container {
+      max-width: 940px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 25px 35px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    .section {
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #444;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 9px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .rx-pad-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 15px;
+      border-bottom: 2px solid #005f73;
+      padding-bottom: 12px;
+      margin-bottom: 15px;
+    }
+    .doc-details h2 {
+      margin: 0;
+      color: #005f73;
+      font-size: 21px;
+    }
+    .doc-details p, .chamber-details p {
+      margin: 3px 0;
+      font-size: 13px;
+      color: #444;
+    }
+    .chamber-details {
+      text-align: right;
+    }
+    .patient-bar {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1.1fr 0.9fr 1.1fr;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .patient-bar label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #555;
+      display: block;
+    }
+    .patient-bar input {
+      width: 100%;
+      padding: 7px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .rx-body {
+      display: grid;
+      grid-template-columns: 32% 66%;
+      gap: 2%;
+      min-height: 380px;
+    }
+    .left-panel {
+      border-right: 1px solid #cbd5e1;
+      padding-right: 15px;
+    }
+    .left-panel h4 {
+      margin: 0 0 6px 0;
+      color: #005f73;
+      font-size: 14px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 3px;
+    }
+    .left-panel textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 13px;
+      margin-bottom: 15px;
+      resize: vertical;
+    }
+    .rx-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .rx-symbol {
+      font-size: 26px;
+      font-weight: bold;
+      color: #005f73;
+      font-family: serif;
+    }
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      background: #005f73;
+      color: white;
+      font-size: 12px;
+      padding: 8px;
+      text-align: left;
+    }
+    td {
+      padding: 6px 4px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    td input, td select {
+      width: 100%;
+      padding: 7px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .btn {
+      padding: 9px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .btn-primary { background: #005f73; color: white; }
+    .btn-add { background: #0a9396; color: white; }
+    .btn-save { background: #2b9348; color: white; }
+    .btn-print { background: #ee9b00; color: #000; }
+    .btn-receipt { background: #6a4c93; color: white; }
+    .btn-danger { background: #d00000; color: white; padding: 6px 9px; }
+    .action-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .signature-area {
+      text-align: center;
+      width: 180px;
+      margin-left: auto;
+      margin-top: 35px;
+    }
+    .signature-line {
+      border-top: 1px solid #222;
+      padding-top: 4px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    #receiptPrintArea {
+      display: none;
+      border: 2px solid #005f73;
+      padding: 25px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .receipt-header {
+      text-align: center;
+      border-bottom: 2px dashed #005f73;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .receipt-badge {
+      display: inline-block;
+      background: #005f73;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    .receipt-table td {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+    .history-table th, .history-table td {
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    .med-db-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    @media screen and (max-width: 768px) {
+      .container {
+        margin: 10px;
+        padding: 15px;
+      }
+      .rx-pad-header {
+        flex-direction: column;
+        text-align: left;
+      }
+      .chamber-details {
+        text-align: left;
+      }
+      .patient-bar {
+        grid-template-columns: 1fr 1fr;
+      }
+      .patient-bar > div:first-child {
+        grid-column: span 2;
+      }
+      .rx-body {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .left-panel {
+        border-right: none;
+        border-bottom: 2px solid #e2e8f0;
+        padding-right: 0;
+        padding-bottom: 10px;
+      }
+      #medTable {
+        min-width: 540px;
+      }
+      .action-footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn-group {
+        flex-direction: column;
+      }
+      .btn-group .btn {
+        width: 100%;
+        padding: 11px;
+      }
+    }
+    @media print {
+      @page {
+        margin: 0;
+      }
+      body {
+        background: none;
+        margin: 0;
+        padding-top: var(--print-top-margin);
+        padding-bottom: var(--print-bottom-margin);
+        padding-left: var(--print-left-margin);
+        padding-right: var(--print-right-margin);
+      }
+      .navbar, .no-print {
+        display: none !important;
+      }
+      .container {
+        box-shadow: none;
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+        width: 100%;
+      }
+      .table-responsive {
+        overflow: visible !important;
+      }
+      #medTable {
+        min-width: 100% !important;
+      }
+      input, textarea, select {
+        border: none !important;
+        background: transparent !important;
+        padding: 2px 0 !important;
+        appearance: none;
+        -webkit-appearance: none;
+        resize: none;
+        color: #000 !important;
+      }
+      .patient-bar {
+        background: none;
+        border: 1px solid #999;
+      }
+      th {
+        background-color: #f1f5f9 !important;
+        color: #000 !important;
+        border-bottom: 1px solid #000;
+        -webkit-print-color-adjust: exact;
+      }
+      .hide-empty-meds, .hide-header-on-pad {
+        display: none !important;
+      }
+      body.printing-receipt #rxMainView {
+        display: none !important;
+      }
+      body.printing-receipt #receiptPrintArea {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="navbar no-print">
+    <button type="button" class="nav-btn active" onclick="switchTab('rxTab', this)">Prescription</button>
+    <button type="button" class="nav-btn" onclick="switchTab('patientsTab', this)">Saved Patients</button>
+    <button type="button" class="nav-btn" onclick="switchTab('medDbTab', this)">Medicines</button>
+    <button type="button" class="nav-btn" onclick="switchTab('doseTab', this)">Child Dose</button>
+    <button type="button" class="nav-btn" onclick="switchTab('doctorTab', this)">Doctor Profile</button>
+    <button type="button" class="nav-btn" onclick="switchTab('printSettingsTab', this)">Pad & Print Margin</button>
+  </div>
+
+  <datalist id="medicineSuggestions"></datalist>
+  <datalist id="durList"><option value="৩ দিন"><option value="৫ দিন"><option value="৭ দিন"><option value="১০ দিন"><option value="১৪ দিন"><option value="১ মাস"><option value="২ মাস"><option value="৩ মাস"><option value="চলবে"></datalist>
+  <datalist id="insList"><option value="খাওয়ার আগে"><option value="খাওয়ার পরে"><option value="খালি পেটে"><option value="রাতে ঘুমানোর আগে"><option value="প্রয়োজনে"></datalist>
+  <style>
+    .patient-bar select{width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:4px;font-size:13px;font-weight:600}
+    .form-group{margin-bottom:10px}.mini{padding:5px 9px;font-size:12px}
+    .chip{display:flex;justify-content:space-between;align-items:center;gap:6px;border:1px solid #cbd5e1;border-radius:5px;padding:6px 9px;font-size:13px;background:#f8fafc}
+    .qchips{display:flex;flex-wrap:wrap;gap:4px;margin:-2px 0 6px}
+    .qchips button{border:1px solid #94d2bd;background:#e9f5f2;color:#005f73;border-radius:12px;padding:2px 8px;font-size:11px;cursor:pointer}
+    .qchips button:hover{background:#0a9396;color:#fff}
+    .ch2{display:inline-flex}
+    .qchips .ch2 button:first-child{border-radius:12px 0 0 12px}
+    .qchips .ch2 button:last-child{border-radius:0 12px 12px 0;border-left:none;color:#d00000;background:#fff;padding:2px 6px}
+    .vitals{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;margin-bottom:8px}
+    .vit label{display:block;font-size:11px;font-weight:600;color:#555}
+    .vit input{width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:4px;font-size:13px}
+    .left-panel textarea{line-height:1.5;overflow:hidden}
+    .left-panel .sec{margin-bottom:6px}
+    @media print{.chip .btn{display:none}::placeholder{color:transparent!important}.left-panel textarea{margin-bottom:6px}}
+  </style>
+
+  <div class="container">
+
+    <div id="rxTab" class="section active">
+      <div id="rxMainView">
+        <div class="rx-pad-header" id="rxHeaderBlock">
+          <div class="doc-details">
+            <h2 id="dispDocName"></h2><p id="dispDocDegree"></p><p id="dispDocSpec"></p><p id="dispDocReg"></p>
+          </div>
+          <div class="chamber-details">
+            <p id="dispCh"></p><p id="dispAddr"></p><p id="dispTime"></p><p id="dispPhone"></p>
+          </div>
+        </div>
+        <div class="patient-bar">
+          <div><label>Patient Name</label><input id="pName"></div>
+          <div><label>Age</label><input id="pAge"></div>
+          <div><label>Gender</label><select id="pSex"><option>Male</option><option>Female</option><option>Other</option></select></div>
+          <div><label>Date</label><input type="date" id="pDate"></div>
+          <div><label>Mobile</label><input id="pPhone"></div>
+        </div>
+        <div class="rx-body">
+          <div class="left-panel">
+            <div class="sec"><h4>Chief Complaints</h4>
+              <div class="qchips no-print" data-t="cc"></div>
+              <textarea id="cc" rows="3" placeholder="• Fever for 3 days"></textarea></div>
+            <div class="sec"><h4>Examination</h4>
+              <div class="vitals">
+                <div class="vit"><label>BP (mmHg)</label><input id="v_bp" placeholder="120/80"></div>
+                <div class="vit"><label>Pulse (/min)</label><input id="v_pulse"></div>
+                <div class="vit"><label>Temp (&deg;F)</label><input id="v_temp"></div>
+                <div class="vit"><label>SpO&#8322; (%)</label><input id="v_spo2"></div>
+                <div class="vit"><label>Weight (kg)</label><input id="v_wt"></div>
+              </div>
+              <div class="qchips no-print" data-t="oe"></div>
+              <textarea id="oe" rows="3" placeholder="• Other findings"></textarea></div>
+            <div class="sec"><h4>Investigation</h4>
+              <div class="qchips no-print" data-t="inv"></div>
+              <textarea id="inv" rows="3" placeholder="• CBC"></textarea></div>
+            <div class="sec"><h4>Diagnosis</h4><textarea id="dx" rows="2"></textarea></div>
+          </div>
+          <div>
+            <div class="rx-title-bar"><span class="rx-symbol">&#8478;</span><button type="button" class="btn btn-add no-print" onclick="addRow()">+ Add Medicine</button></div>
+            <div class="table-responsive">
+              <table id="medTable">
+                <thead><tr><th style="width:30px">#</th><th>Medicine</th><th>Dose</th><th>Duration</th><th>Instruction</th><th class="no-print"></th></tr></thead>
+                <tbody id="medBody"></tbody>
+              </table>
+            </div>
+            <div id="calcNotes" class="no-print" style="font-size:12px;margin-top:6px"></div>
+            <div class="form-group adv-sec" style="margin-top:15px"><label>Advice</label>
+              <div class="qchips no-print" id="advChips"></div>
+              <textarea id="advice" rows="3" placeholder="• Advice" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:4px;line-height:1.5;overflow:hidden"></textarea>
+              <button type="button" class="btn btn-add mini no-print" style="margin-top:4px" onclick="saveAdvice()">+ Save lines to list</button></div>
+            <div class="form-group adv-sec"><label>Next Visit</label>
+              <div class="qchips no-print" id="nextChips"></div>
+              <input id="nextVisit">
+              <button type="button" class="btn btn-add mini no-print" style="margin-top:4px" onclick="saveNext()">+ Save to list</button></div>
+            <div class="signature-area"><div class="signature-line">Signature</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-footer no-print">
+        <div class="form-group" style="margin:0"><label>Fee (Tk)</label><input type="number" id="fee" style="width:120px" value="0"></div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-primary" onclick="newRx()">New</button>
+          <button type="button" class="btn btn-save" onclick="savePatient()">Save</button>
+          <button type="button" class="btn btn-print" onclick="window.print()">Print Rx</button>
+          <button type="button" class="btn btn-receipt" onclick="printReceipt()">Print Receipt</button>
+        </div>
+      </div>
+
+      <div id="receiptPrintArea">
+        <div class="receipt-header">
+          <h2 id="rcDoc" style="margin:0;color:#005f73"></h2>
+          <p id="rcCh" style="margin:3px 0;font-size:13px"></p>
+          <span class="receipt-badge">MONEY RECEIPT</span>
+        </div>
+        <table class="receipt-table" style="width:100%">
+          <tr><td>Receipt No</td><td id="rcNo"></td></tr>
+          <tr><td>Date</td><td id="rcDate"></td></tr>
+          <tr><td>Patient</td><td id="rcName"></td></tr>
+          <tr><td>Age / Gender</td><td id="rcAge"></td></tr>
+          <tr><td><b>Fee Received</b></td><td><b id="rcFee"></b></td></tr>
+        </table>
+        <div class="signature-area"><div class="signature-line">Received by</div></div>
+      </div>
+    </div>
+
+    <div id="patientsTab" class="section">
+      <div class="form-group"><input id="pSearch" placeholder="Search by name or mobile..." oninput="renderPatients()"></div>
+      <div class="table-responsive">
+        <table class="history-table"><thead><tr><th>Date</th><th>Name</th><th>Age</th><th>Mobile</th><th>Diagnosis</th><th></th></tr></thead><tbody id="ptBody"></tbody></table>
+      </div>
+    </div>
+
+    <div id="medDbTab" class="section">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <input id="newMed" placeholder="Medicine (e.g. Tab. Napa 500mg)" style="flex:2;min-width:180px;padding:9px;border:1px solid #cbd5e1;border-radius:4px">
+        <input id="newCo" list="companyList" placeholder="Company (e.g. Beximco)" style="flex:1;min-width:140px;padding:9px;border:1px solid #cbd5e1;border-radius:4px" onkeydown="if(event.key==='Enter')addMed()">
+        <button type="button" class="btn btn-add" onclick="addMed()">Add</button>
+      </div>
+      <datalist id="companyList"></datalist>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input id="medSearch" placeholder="Search medicine / company..." oninput="renderMeds()" style="flex:2;min-width:180px;padding:9px;border:1px solid #cbd5e1;border-radius:4px">
+        <select id="coFilter" onchange="renderMeds()" style="flex:1;min-width:140px;padding:9px;border:1px solid #cbd5e1;border-radius:4px"></select>
+      </div>
+      <details style="margin-bottom:15px"><summary style="cursor:pointer;font-size:14px;font-weight:600">Bulk add (one per line: Medicine, Company)</summary>
+        <textarea id="bulkMed" rows="6" placeholder="Tab. Napa 500mg, Beximco&#10;Tab. Ace 500mg, Square" style="width:100%;margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:4px"></textarea>
+        <button type="button" class="btn btn-primary" onclick="bulkAdd()">Import</button>
+      </details>
+      <div class="med-db-grid" id="medDbGrid"></div>
+    </div>
+
+    <div id="doseTab" class="section">
+      <p style="font-size:13px;background:#fff8e1;border:1px solid #ee9b00;border-radius:5px;padding:10px;margin-top:0">
+        &#9888; These values are only reference defaults. Verify every value against your own protocol / BNFC before use. The calculated dose is a suggestion; the doctor must check it before printing.
+        Auto-calculation works for children (age up to 12 years, or weight under 40 kg when age is empty) when the medicine name matches a drug below and the weight is entered in Examination.
+      </p>
+      <div class="table-responsive"><table class="history-table" id="formTable" style="min-width:1000px"></table></div>
+      <div style="margin-top:10px"><button type="button" class="btn btn-add" onclick="fmAdd()">+ Add Drug</button></div>
+    </div>
+
+    <div id="doctorTab" class="section">
+      <div class="form-grid">
+        <div class="form-group"><label>Doctor Name</label><input id="d_name"></div>
+        <div class="form-group"><label>Degrees</label><input id="d_degree"></div>
+        <div class="form-group"><label>Speciality</label><input id="d_spec"></div>
+        <div class="form-group"><label>BMDC Reg No</label><input id="d_reg"></div>
+        <div class="form-group"><label>Chamber Name</label><input id="d_ch"></div>
+        <div class="form-group"><label>Address</label><input id="d_addr"></div>
+        <div class="form-group"><label>Visiting Time</label><input id="d_time"></div>
+        <div class="form-group"><label>Phone</label><input id="d_phone"></div>
+      </div>
+      <button type="button" class="btn btn-save" onclick="saveDoctor()">Save Profile</button>
+      <hr style="margin:25px 0">
+      <h3 style="color:#005f73;margin:0 0 6px">Backup &amp; Restore</h3>
+      <p style="font-size:13px;color:#555;margin:0 0 10px">Patients, medicines, advice list, doctor profile, print settings and child-dose list all go in one file. Download regularly and keep a copy in Google Drive or a pen drive.</p>
+      <div class="btn-group">
+        <button type="button" class="btn btn-save" onclick="backupAll()">Download Backup</button>
+        <button type="button" class="btn btn-primary" onclick="$('restoreFile').click()">Restore from File</button>
+        <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreAll(this)">
+      </div>
+      <p id="bkInfo" style="font-size:12px;color:#555"></p>
+
+    </div>
+
+    <div id="printSettingsTab" class="section">
+      <div class="form-grid">
+        <div class="form-group"><label>Top margin (mm)</label><input type="number" id="m_top" min="0"></div>
+        <div class="form-group"><label>Bottom margin (mm)</label><input type="number" id="m_bottom" min="0"></div>
+        <div class="form-group"><label>Left margin (mm)</label><input type="number" id="m_left" min="0"></div>
+        <div class="form-group"><label>Right margin (mm)</label><input type="number" id="m_right" min="0"></div>
+      </div>
+      <label style="font-size:14px"><input type="checkbox" id="m_hide" style="width:auto"> Hide doctor header when printing (pre-printed pad)</label>
+      <div style="margin-top:15px"><button type="button" class="btn btn-save" onclick="savePrint()">Save Settings</button></div>
+    </div>
+  </div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){alert('Storage full/blocked')}};
+
+const defDoc={name:'Dr. Mahmudul Hasan',degree:'MBBS, BCS (Health), FCPS (Medicine)',spec:'Medicine & Diabetes Specialist',reg:'BMDC Reg No: A-45890',ch:'',addr:'',time:'',phone:''};
+const defMeds=[['Tab. Napa 500mg','Beximco'],['Tab. Napa Extra','Beximco'],['Tab. Napa Rapid','Beximco'],['Tab. Napa One 665mg','Beximco'],['Tab. Filmet 400mg','Beximco'],['Cap. Bextram Gold','Beximco'],['Tab. Ace 500mg','Square'],['Tab. Ace Plus','Square'],['Cap. Seclo 20mg','Square'],['Tab. Fexo 120mg','Square'],['Tab. Ciprocin 500mg','Square'],['Tab. Azithrocin 500mg','Square'],['Tab. Zimax 500mg','Square'],['Cap. Cef-3 200mg','Square'],['Cap. Maxpro 20mg','Renata'],['Cap. Losectil 20mg','Eskayef'],['Cap. Sergel 20mg','Healthcare'],['Tab. Monas 10mg','Aristopharma'],['Tab. Metformin 500mg',''],['Syp. Antacid',''],['ORS Saline',''],['Tab. Vitamin B Complex','']].map(([n,c])=>({n,c}));
+function loadMeds(){
+  const had=load('rx_meds2',null);
+  let a=had||load('rx_meds',[]).map(n=>typeof n==='string'?{n,c:''}:n);
+  if(!had){const h=new Set(a.map(m=>m.n.toLowerCase()));defMeds.forEach(m=>{if(!h.has(m.n.toLowerCase()))a.push({...m})})}
+  return a.sort((x,y)=>x.n.localeCompare(y.n));
+}
+let doc=load('rx_doctor',defDoc), meds=loadMeds(), pts=load('rx_patients',[]), ps=load('rx_print',{top:10,bottom:10,left:10,right:10,hide:false}), curId=null;
+
+function switchTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  $(id).classList.add('active'); if(btn)btn.classList.add('active');
+  if(id==='patientsTab')renderPatients(); if(id==='medDbTab')renderMeds(); if(id==='doseTab')renderForm();
+}
+
+/* Doctor */
+function renderDoctor(){
+  const m={dispDocName:'name',dispDocDegree:'degree',dispDocSpec:'spec',dispDocReg:'reg',dispCh:'ch',dispAddr:'addr',dispTime:'time',dispPhone:'phone'};
+  for(const id in m)$(id).textContent=doc[m[id]]||'';
+  ['name','degree','spec','reg','ch','addr','time','phone'].forEach(k=>$('d_'+k).value=doc[k]||'');
+}
+function saveDoctor(){
+  ['name','degree','spec','reg','ch','addr','time','phone'].forEach(k=>doc[k]=$('d_'+k).value.trim());
+  store('rx_doctor',doc); renderDoctor(); alert('Doctor profile saved');
+}
+
+/* Print settings */
+function applyPrint(){
+  const r=document.documentElement.style;
+  ['top','bottom','left','right'].forEach(k=>r.setProperty('--print-'+k+'-margin',(ps[k]??10)+'mm'));
+  $('rxHeaderBlock').classList.toggle('hide-header-on-pad',!!ps.hide);
+  ['top','bottom','left','right'].forEach(k=>$('m_'+k).value=ps[k]);
+  $('m_hide').checked=!!ps.hide;
+}
+function savePrint(){
+  ['top','bottom','left','right'].forEach(k=>ps[k]=Math.max(0,+$('m_'+k).value||0));
+  ps.hide=$('m_hide').checked; store('rx_print',ps); applyPrint(); alert('Print settings saved');
+}
+window.addEventListener('beforeprint',()=>document.querySelectorAll('#medBody tr').forEach(r=>{if(!r.querySelector('.m-name').value.trim())r.classList.add('hide-empty-meds')}));
+window.addEventListener('afterprint',()=>{document.querySelectorAll('.hide-empty-meds').forEach(r=>r.classList.remove('hide-empty-meds'));document.body.classList.remove('printing-receipt')});
+
+/* Medicine database */
+function renderMeds(){
+  const cos=[...new Set(meds.map(m=>m.c).filter(Boolean))].sort();
+  $('companyList').innerHTML=cos.map(c=>`<option value="${esc(c)}">`).join('');
+  const cf=$('coFilter'),cur=cf.value;
+  cf.innerHTML='<option value="">All companies</option>'+cos.map(c=>`<option>${esc(c)}</option>`).join('');
+  cf.value=cos.includes(cur)?cur:'';
+  $('medicineSuggestions').innerHTML=meds.map(m=>`<option value="${esc(m.n)}" label="${esc(m.c)}">`).join('');
+  const q=$('medSearch').value.toLowerCase().trim();
+  $('medDbGrid').innerHTML=meds.map((m,i)=>({m,i})).filter(({m})=>(!cf.value||m.c===cf.value)&&(!q||(m.n+' '+m.c).toLowerCase().includes(q)))
+    .map(({m,i})=>`<div class="chip"><span>${esc(m.n)}${m.c?`<br><small style="color:#666">${esc(m.c)}</small>`:''}</span><button type="button" class="btn btn-danger mini" onclick="delMed(${i})">&times;</button></div>`).join('');
+}
+function saveMeds(){meds.sort((a,b)=>a.n.localeCompare(b.n));store('rx_meds2',meds);renderMeds()}
+function addMed(){
+  const n=$('newMed').value.trim(),c=$('newCo').value.trim(); if(!n)return;
+  const e=meds.find(m=>m.n.toLowerCase()===n.toLowerCase());
+  if(e){if(c)e.c=c}else meds.push({n,c});
+  $('newMed').value=''; saveMeds();
+}
+function bulkAdd(){
+  let k=0;
+  $('bulkMed').value.split('\n').forEach(l=>{
+    const [a,...r]=l.split(','),n=(a||'').trim(),c=r.join(',').trim(); if(!n)return;
+    const e=meds.find(m=>m.n.toLowerCase()===n.toLowerCase());
+    if(e){if(c)e.c=c}else{meds.push({n,c});k++}
+  });
+  $('bulkMed').value=''; saveMeds(); alert(k+' new medicine(s) added');
+}
+function delMed(i){meds.splice(i,1);saveMeds()}
+
+/* Prescription rows */
+function addRow(m={}){
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="sn"></td>
+  <td><input class="m-name" list="medicineSuggestions" value="${esc(m.name)}"></td>
+  <td><input class="m-dose" value="${esc(m.dose)}" placeholder="1+0+1"></td>
+  <td><input class="m-dur" list="durList" value="${esc(m.dur)}" placeholder="৭ দিন"></td>
+  <td><input class="m-ins" list="insList" value="${esc(m.ins)}" placeholder="খাওয়ার পরে"></td>
+  <td class="no-print"><button type="button" class="btn btn-danger" onclick="this.closest('tr').remove();renum()">&times;</button></td>`;
+  $('medBody').appendChild(tr); renum();
+}
+function renum(){document.querySelectorAll('#medBody .sn').forEach((c,i)=>c.textContent=i+1);refreshCalc();saveDraft()}
+function getRx(){
+  return {name:$('pName').value.trim(),age:$('pAge').value,sex:$('pSex').value,date:$('pDate').value,phone:$('pPhone').value,
+    cc:$('cc').value,oe:$('oe').value,inv:$('inv').value,dx:$('dx').value,bp:$('v_bp').value,pulse:$('v_pulse').value,temp:$('v_temp').value,spo2:$('v_spo2').value,wt:$('v_wt').value,advice:$('advice').value,next:$('nextVisit').value,fee:$('fee').value,
+    meds:[...document.querySelectorAll('#medBody tr')].map(r=>({name:r.querySelector('.m-name').value.trim(),dose:r.querySelector('.m-dose').value,dur:r.querySelector('.m-dur').value,ins:r.querySelector('.m-ins').value})).filter(m=>m.name)};
+}
+function setRx(r){
+  $('pName').value=r.name||'';$('pAge').value=r.age||'';$('pSex').value=r.sex||'Male';$('pDate').value=r.date||'';$('pPhone').value=r.phone||'';
+  $('cc').value=r.cc||'';$('oe').value=r.oe||'';$('inv').value=r.inv||'';$('dx').value=r.dx||'';$('v_bp').value=r.bp||'';$('v_pulse').value=r.pulse||'';$('v_temp').value=r.temp||'';$('v_spo2').value=r.spo2||'';$('v_wt').value=r.wt||'';$('advice').value=r.advice||'';$('nextVisit').value=r.next||'';growAll();$('fee').value=r.fee||0;
+  $('medBody').innerHTML=''; (r.meds&&r.meds.length?r.meds:[{},{},{}]).forEach(addRow);
+}
+function newRx(){
+  if(getRx().name&&!confirm('Clear current prescription?'))return;
+  curId=null; store('rx_draft',null); setRx({date:new Date().toISOString().slice(0,10)});
+}
+
+/* Saved patients */
+function savePatient(){
+  const r=getRx(); if(!r.name){alert('Enter patient name');return}
+  r.saved=Date.now();
+  if(curId){const i=pts.findIndex(p=>p.id===curId); if(i>-1)pts[i]={...r,id:curId}; else pts.unshift({...r,id:curId})}
+  else{curId=Date.now();pts.unshift({...r,id:curId})}
+  store('rx_patients',pts); saveDraft(); alert('Patient saved');
+}
+function renderPatients(){
+  const q=$('pSearch').value.toLowerCase().trim();
+  const list=pts.filter(p=>!q||(p.name||'').toLowerCase().includes(q)||(p.phone||'').includes(q));
+  $('ptBody').innerHTML=list.length?list.map(p=>`<tr><td>${esc(p.date)}</td><td>${esc(p.name)}</td><td>${esc(p.age)}</td><td>${esc(p.phone)}</td><td>${esc(p.dx)}</td>
+  <td style="white-space:nowrap"><button type="button" class="btn btn-add mini" onclick="loadPatient(${p.id})">Open</button> <button type="button" class="btn btn-danger mini" onclick="delPatient(${p.id})">&times;</button></td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#777">No saved patients</td></tr>';
+}
+function loadPatient(id){
+  const p=pts.find(x=>x.id===id); if(!p)return;
+  curId=id; setRx(p); switchTab('rxTab',document.querySelector('.nav-btn'));
+}
+function delPatient(id){
+  if(!confirm('Delete this patient record?'))return;
+  pts=pts.filter(p=>p.id!==id); store('rx_patients',pts); if(curId===id)curId=null; renderPatients();
+}
+
+/* Receipt */
+function printReceipt(){
+  const r=getRx(); if(!r.name){alert('Enter patient name');return}
+  const no=load('rx_rcpt',0)+1; store('rx_rcpt',no);
+  $('rcDoc').textContent=doc.name; $('rcCh').textContent=[doc.ch,doc.addr,doc.phone].filter(Boolean).join(' | ');
+  $('rcNo').textContent='R-'+String(no).padStart(5,'0'); $('rcDate').textContent=r.date;
+  $('rcName').textContent=r.name; $('rcAge').textContent=[r.age,r.sex].filter(Boolean).join(' / ');
+  $('rcFee').textContent=(+r.fee||0)+' Tk';
+  document.body.classList.add('printing-receipt'); window.print();
+}
+
+/* Structured notes: bullets, quick chips, auto-grow, print-hide empty */
+const CH={
+  cc:['Fever','Cough','Cold','Sore throat','Headache','Abdominal pain','Vomiting','Loose motion','Chest pain','Breathlessness','Weakness','Body ache'].map(x=>[x,x+' for ']),
+  oe:['Anaemia','Jaundice','Oedema','Dehydration','Throat','Chest','Heart','Abdomen'].map(x=>[x,x+': ']),
+  inv:['CBC','RBS','HbA1c','Urine R/E','S. Creatinine','SGPT','Lipid Profile','ECG','X-ray Chest P/A','USG W/A','Dengue NS1','Blood Group'].map(x=>[x,x])
+};
+function grow(t){t.style.height='auto';t.style.height=t.scrollHeight+'px'}
+function growAll(){document.querySelectorAll('.left-panel textarea,#advice').forEach(grow)}
+function addLine(id,txt){
+  const t=$(id);let v=t.value.replace(/\s+$/,''); if(v==='•')v='';
+  t.value=(v?v+'\n':'')+'• '+txt; t.focus(); grow(t);
+}
+document.querySelectorAll('.qchips[data-t]').forEach(box=>{
+  const id=box.dataset.t;
+  CH[id].forEach(([l,t])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.onclick=()=>addLine(id,t);box.appendChild(b)});
+});
+['cc','oe','inv','advice'].forEach(id=>{
+  const t=$(id);
+  t.addEventListener('focus',()=>{if(!t.value.trim()){t.value='• ';grow(t)}});
+  t.addEventListener('blur',()=>{if(t.value.trim()==='•'){t.value='';grow(t)}});
+  t.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();t.setRangeText('\n• ',t.selectionStart,t.selectionEnd,'end');grow(t)}});
+});
+document.querySelectorAll('.left-panel textarea,#advice').forEach(t=>t.addEventListener('input',()=>grow(t)));
+const isEmpty=el=>[...el.querySelectorAll('input,textarea')].every(i=>!i.value.replace(/•/g,'').trim());
+window.addEventListener('beforeprint',()=>{
+  growAll();
+  document.querySelectorAll('.left-panel .sec,.left-panel .vit,.adv-sec').forEach(el=>{if(isEmpty(el))el.classList.add('hide-empty-meds')});
+});
+
+/* Saved advice / next-visit lists */
+const defLib={advice:['প্রচুর পানি পান করুন','পর্যাপ্ত বিশ্রাম নিন','নিয়মিত ঔষধ সেবন করুন','তৈলাক্ত ও মসলাযুক্ত খাবার এড়িয়ে চলুন','সমস্যা বাড়লে দ্রুত যোগাযোগ করুন'],next:['৭ দিন পর','১৪ দিন পর','১ মাস পর','রিপোর্টসহ দেখা করবেন']};
+let lib=load('rx_lib',null)||defLib;
+function renderLib(){
+  [['advice','advChips'],['next','nextChips']].forEach(([k,id])=>{
+    const box=$(id); box.innerHTML='';
+    lib[k].forEach((t,i)=>{
+      const w=document.createElement('span'); w.className='ch2';
+      const b=document.createElement('button'); b.type='button'; b.textContent=t;
+      b.onclick=()=>k==='advice'?addLine('advice',t):($('nextVisit').value=t);
+      const x=document.createElement('button'); x.type='button'; x.textContent='×'; x.title='Remove from list';
+      x.onclick=()=>{lib[k].splice(i,1);store('rx_lib',lib);renderLib()};
+      w.append(b,x); box.appendChild(w);
+    });
+  });
+}
+function addToLib(k,t){
+  t=t.trim(); if(!t||lib[k].some(x=>x.toLowerCase()===t.toLowerCase()))return 0;
+  lib[k].push(t); return 1;
+}
+function saveAdvice(){
+  let n=0; $('advice').value.split('\n').forEach(l=>{n+=addToLib('advice',l.replace(/^\s*•\s*/,''))});
+  store('rx_lib',lib); renderLib(); alert(n+' new advice saved to list');
+}
+function saveNext(){
+  const n=addToLib('next',$('nextVisit').value); store('rx_lib',lib); renderLib(); alert(n?'Saved to list':'Already in list / empty');
+}
+
+/* Child dose (weight/age based) */
+const defForm=[
+  {key:'Paracetamol',match:'paracetamol,napa,ace,fast',skip:'plus,extra',mgkg:15,f:4,maxDay:60,adult:1000,syr:120,tab:500,minM:1},
+  {key:'Ibuprofen',match:'ibuprofen,brufen',skip:'',mgkg:10,f:3,maxDay:30,adult:400,syr:100,tab:200,minM:6}
+];
+let fm=load('rx_formulary',null)||defForm;
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const qty=n=>{const w=Math.floor(n),h=n%1?'½':'';return (w||!h?bn(w):'')+h};
+const hit=(words,txt)=>String(words||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).some(x=>new RegExp('\\b'+x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(txt));
+const findDrug=name=>{const t=name.toLowerCase();return fm.find(d=>hit(d.match,t)&&!hit(d.skip,t))};
+function childCtx(){
+  const w=parseFloat($('v_wt').value), a=$('pAge').value.toLowerCase().trim();
+  const y=a.match(/(\d+(?:\.\d+)?)\s*y(?:rs?|ears?)?\b/), m=a.match(/(\d+(?:\.\d+)?)\s*m(?:os?|onths?)?\b/);
+  let ageM=null;
+  if(y||m)ageM=(y?parseFloat(y[1])*12:0)+(m?parseFloat(m[1]):0);
+  else if(!isNaN(parseFloat(a)))ageM=parseFloat(a)*12;
+  const W=isNaN(w)?null:w;
+  return {w:W,ageM,child:ageM!=null?ageM<=144:(W!=null&&W<40)};
+}
+function calcDose(d,name,ctx){
+  const w=ctx.w,f=d.f||3,capMg=d.maxDay?d.maxDay*w/f:Infinity,mg0=w*d.mgkg;
+  const mg=Math.min(mg0,capMg,d.adult||Infinity), h=Math.round(24/f);
+  const tab=/\b(tab|tablet|cap|capsule)\b/i.test(name); let amt,real;
+  if(!tab){
+    const m=name.match(/(\d+(?:\.\d+)?)\s*mg\s*\/\s*5\s*ml/i), conc=m?+m[1]:d.syr;
+    if(!conc)return {err:'syrup strength not set (see Child Dose tab)'};
+    let ml=Math.round(mg/conc*5*2)/2; if(ml*conc/5>capMg+1e-9)ml-=0.5;
+    if(ml<=0)return {err:'dose too small to measure as syrup'};
+    real=ml*conc/5; amt=bn(ml)+' মি.লি.';
+  }else{
+    const m=name.match(/(\d+(?:\.\d+)?)\s*mg/i), tm=m?+m[1]:d.tab;
+    if(!tm)return {err:'tablet strength not set (see Child Dose tab)'};
+    let n=Math.round(mg/tm*2)/2; if(n*tm>capMg+1e-9)n-=0.5;
+    if(n<=0)return {err:'dose is below ½ tablet - use syrup/drops'};
+    real=n*tm; amt=qty(n)+' টি';
+  }
+  return {text:amt+' '+bn(h)+' ঘণ্টা পরপর',mg0,real,day:real*f,maxDayMg:d.maxDay?d.maxDay*w:null,capped:mg<mg0-1e-9};
+}
+function refreshCalc(){
+  const box=$('calcNotes'); if(!box)return;
+  const ctx=childCtx(), notes=[];
+  if(ctx.child){
+    if(ctx.w!=null&&(ctx.w<2||ctx.w>80))notes.push([1,'Weight looks unusual - please check']);
+    document.querySelectorAll('#medBody tr').forEach(tr=>{
+      const name=tr.querySelector('.m-name').value.trim(), d=name&&findDrug(name); if(!d)return;
+      if(ctx.w==null){notes.push([1,d.key+': enter weight (kg) in Examination to auto-calculate dose']);return}
+      const r=calcDose(d,name,ctx);
+      if(r.err){notes.push([1,d.key+': '+r.err]);return}
+      const di=tr.querySelector('.m-dose');
+      if(!di.value.trim()||tr.dataset.auto==='1'){di.value=r.text;tr.dataset.auto='1'}
+      notes.push([0,`${d.key}: ${ctx.w} kg × ${d.mgkg} mg/kg = ${Math.round(r.mg0)} mg/dose → ${Math.round(r.real)} mg/dose, ${Math.round(r.day)} mg/day`+(r.maxDayMg?` (limit ${Math.round(r.maxDayMg)} mg/day)`:'')+(r.capped?' [capped at limit]':'')]);
+      if(ctx.ageM!=null&&d.minM&&ctx.ageM<d.minM)notes.push([1,`${d.key}: age is below ${d.minM} month(s) - verify before prescribing`]);
+    });
+    if(notes.length)notes.push([0,'Auto dose is a suggestion - please verify before printing']);
+  }
+  box.innerHTML=notes.map(([w,t])=>`<div style="color:${w?'#d00000':'#555'}">${w?'⚠ ':'• '}${esc(t)}</div>`).join('');
+}
+$('medBody').addEventListener('change',e=>{if(e.target.classList.contains('m-name'))refreshCalc()});
+$('medBody').addEventListener('input',e=>{if(e.target.classList.contains('m-dose'))e.target.closest('tr').dataset.auto=''});
+['v_wt','pAge'].forEach(id=>$(id).addEventListener('input',refreshCalc));
+
+const fCols=[['key','Drug','text'],['match','Match words (comma)','text'],['skip','Skip words','text'],['mgkg','mg/kg/dose','number'],['f','Doses/day','number'],['maxDay','Max mg/kg/day','number'],['adult','Adult max mg/dose','number'],['syr','Syrup mg/5ml','number'],['tab','Tablet mg','number'],['minM','Min age (months)','number']];
+function renderForm(){
+  $('formTable').innerHTML='<thead><tr>'+fCols.map(c=>`<th>${c[1]}</th>`).join('')+'<th></th></tr></thead><tbody>'+
+    fm.map((d,i)=>'<tr>'+fCols.map(([k,,t])=>`<td><input type="${t}" step="any" value="${esc(d[k])}" oninput="fmSet(${i},'${k}',this)"></td>`).join('')+`<td><button type="button" class="btn btn-danger" onclick="fmDel(${i})">&times;</button></td></tr>`).join('')+'</tbody>';
+}
+function fmSet(i,k,el){fm[i][k]=el.type==='number'?(parseFloat(el.value)||0):el.value;store('rx_formulary',fm);refreshCalc()}
+function fmAdd(){fm.push({key:'',match:'',skip:'',mgkg:0,f:3,maxDay:0,adult:0,syr:0,tab:0,minM:0});store('rx_formulary',fm);renderForm()}
+function fmDel(i){if(!confirm('Remove this drug?'))return;fm.splice(i,1);store('rx_formulary',fm);renderForm();refreshCalc()}
+
+/* Draft autosave + backup */
+let dT;
+function saveDraft(){clearTimeout(dT);dT=setTimeout(()=>{const r=getRx();r._cur=curId;store('rx_draft',r)},400)}
+$('rxTab').addEventListener('input',saveDraft);
+$('rxTab').addEventListener('change',saveDraft);
+function initDraft(){
+  const today=new Date().toISOString().slice(0,10), dr=load('rx_draft',null);
+  if(dr){curId=dr._cur||null; if(!curId)dr.date=today; setRx(dr)} else setRx({date:today});
+  refreshCalc(); bkInfo();
+}
+function bkInfo(){const t=load('rx_lastBackup',0);$('bkInfo').textContent=t?'Last backup: '+new Date(t).toLocaleString():'No backup taken yet'}
+function backupAll(){
+  store('rx_lastBackup',Date.now()); const o={};
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('rx_'))o[k]=localStorage.getItem(k)}
+  const b=new Blob([JSON.stringify({app:'rx-system',v:1,date:new Date().toISOString(),data:o})],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='prescription-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000); bkInfo();
+}
+function restoreAll(inp){
+  const f=inp.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const j=JSON.parse(r.result); if(j.app!=='rx-system'||!j.data)throw 0;
+      if(!confirm('Backup data will overwrite current data. Continue?')){inp.value='';return}
+      Object.keys(j.data).forEach(k=>{if(k.startsWith('rx_'))localStorage.setItem(k,j.data[k])});
+      alert('Restored'); location.reload();
+    }catch(e){alert('Invalid backup file')}
+    inp.value='';
+  };
+  r.readAsText(f);
+}
+
+/* Init */
+store('rx_meds2',meds); renderLib(); renderDoctor(); applyPrint(); renderMeds(); initDraft(); if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+</script>
+</body>
+</html>
