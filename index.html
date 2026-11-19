@@ -394,6 +394,7 @@
     .qchips{display:flex;flex-wrap:wrap;gap:4px;margin:-2px 0 6px}
     .qchips button{border:1px solid #94d2bd;background:#e9f5f2;color:#005f73;border-radius:12px;padding:2px 8px;font-size:11px;cursor:pointer}
     .qchips button:hover{background:#0a9396;color:#fff}
+    .inv-sig{display:none}
     .ch2{display:inline-flex}
     .qchips .ch2 button:first-child{border-radius:12px 0 0 12px}
     .qchips .ch2 button:last-child{border-radius:0 12px 12px 0;border-left:none;color:#d00000;background:#fff;padding:2px 6px}
@@ -402,7 +403,12 @@
     .vit input{width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:4px;font-size:13px}
     .left-panel textarea{line-height:1.5;overflow:hidden}
     .left-panel .sec{margin-bottom:6px}
-    @media print{.chip .btn{display:none}::placeholder{color:transparent!important}.left-panel textarea{margin-bottom:6px}}
+    @media print{.chip .btn{display:none}::placeholder{color:transparent!important}.left-panel textarea{margin-bottom:6px}
+      body.no-inv-rx #invSec{display:none!important}
+      body.printing-inv .left-panel .sec:not(#invSec),body.printing-inv .rx-right,body.printing-inv #calcNotes{display:none!important}
+      body.printing-inv .rx-body{grid-template-columns:1fr;min-height:0}
+      body.printing-inv .left-panel{border-right:none}
+      body.printing-inv .inv-sig{display:block!important}}
   </style>
 
   <div class="container">
@@ -439,12 +445,12 @@
               </div>
               <div class="qchips no-print" data-t="oe"></div>
               <textarea id="oe" rows="3" placeholder="• Other findings"></textarea></div>
-            <div class="sec"><h4>Investigation</h4>
+            <div class="sec" id="invSec"><h4>Investigation</h4>
               <div class="qchips no-print" data-t="inv"></div>
               <textarea id="inv" rows="3" placeholder="• CBC"></textarea></div>
             <div class="sec"><h4>Diagnosis</h4><textarea id="dx" rows="2"></textarea></div>
           </div>
-          <div>
+          <div class="rx-right">
             <div class="rx-title-bar"><span class="rx-symbol">&#8478;</span><button type="button" class="btn btn-add no-print" onclick="addRow()">+ Add Medicine</button></div>
             <div class="table-responsive">
               <table id="medTable">
@@ -464,6 +470,7 @@
             <div class="signature-area"><div class="signature-line">Signature</div></div>
           </div>
         </div>
+        <div class="signature-area inv-sig"><div class="signature-line">Signature</div></div>
       </div>
 
       <div class="action-footer no-print">
@@ -471,7 +478,9 @@
         <div class="btn-group">
           <button type="button" class="btn btn-primary" onclick="newRx()">New</button>
           <button type="button" class="btn btn-save" onclick="savePatient()">Save</button>
-          <button type="button" class="btn btn-print" onclick="window.print()">Print Rx</button>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="invOnRx" style="width:auto" checked> Investigation in Rx</label>
+          <button type="button" class="btn btn-print" onclick="printRx()">Print Rx</button>
+          <button type="button" class="btn btn-print" onclick="printInv()">Print Investigation</button>
           <button type="button" class="btn btn-receipt" onclick="printReceipt()">Print Receipt</button>
         </div>
       </div>
@@ -610,7 +619,7 @@ function savePrint(){
   ps.hide=$('m_hide').checked; store('rx_print',ps); applyPrint(); alert('Print settings saved');
 }
 window.addEventListener('beforeprint',()=>document.querySelectorAll('#medBody tr').forEach(r=>{if(!r.querySelector('.m-name').value.trim())r.classList.add('hide-empty-meds')}));
-window.addEventListener('afterprint',()=>{document.querySelectorAll('.hide-empty-meds').forEach(r=>r.classList.remove('hide-empty-meds'));document.body.classList.remove('printing-receipt')});
+window.addEventListener('afterprint',()=>{document.querySelectorAll('.hide-empty-meds').forEach(r=>r.classList.remove('hide-empty-meds'));document.body.classList.remove('printing-receipt','printing-inv','no-inv-rx')});
 
 /* Medicine database */
 function renderMeds(){
@@ -715,10 +724,6 @@ function addLine(id,txt){
   const t=$(id);let v=t.value.replace(/\s+$/,''); if(v==='•')v='';
   t.value=(v?v+'\n':'')+'• '+txt; t.focus(); grow(t);
 }
-document.querySelectorAll('.qchips[data-t]').forEach(box=>{
-  const id=box.dataset.t;
-  CH[id].forEach(([l,t])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.onclick=()=>addLine(id,t);box.appendChild(b)});
-});
 ['cc','oe','inv','advice'].forEach(id=>{
   const t=$(id);
   t.addEventListener('focus',()=>{if(!t.value.trim()){t.value='• ';grow(t)}});
@@ -735,7 +740,28 @@ window.addEventListener('beforeprint',()=>{
 /* Saved advice / next-visit lists */
 const defLib={advice:['প্রচুর পানি পান করুন','পর্যাপ্ত বিশ্রাম নিন','নিয়মিত ঔষধ সেবন করুন','তৈলাক্ত ও মসলাযুক্ত খাবার এড়িয়ে চলুন','সমস্যা বাড়লে দ্রুত যোগাযোগ করুন'],next:['৭ দিন পর','১৪ দিন পর','১ মাস পর','রিপোর্টসহ দেখা করবেন']};
 let lib=load('rx_lib',null)||defLib;
+['cc','oe','inv'].forEach(k=>{if(!Array.isArray(lib[k]))lib[k]=CH[k].map(x=>x[1])});
+const mkBtn=(t,title,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.title=title;b.onclick=fn;return b};
+const ddEdit={};
+function renderDD(){
+  document.querySelectorAll('.qchips[data-t]').forEach(box=>{
+    const k=box.dataset.t,nm={cc:'complaint',oe:'finding',inv:'investigation'}[k]; box.innerHTML='';
+    const sel=document.createElement('select');
+    sel.style.cssText='flex:1;min-width:0;padding:5px;border:1px solid #94d2bd;border-radius:4px;font-size:12px;background:#e9f5f2;color:#005f73';
+    sel.innerHTML='<option value="">+ Select '+nm+'</option>'+lib[k].map((t,i)=>`<option value="${i}">${esc(t.trim().replace(/:$/,''))}</option>`).join('');
+    sel.onchange=()=>{if(sel.value!==''){addLine(k,lib[k][+sel.value]);sel.value=''}};
+    box.append(sel,
+      mkBtn('+','Add new to list',()=>{const t=prompt('New '+nm+':');if(t&&addToLib(k,t)){store('rx_lib',lib);renderLib()}}),
+      mkBtn('✎','Edit list',()=>{ddEdit[k]=!ddEdit[k];renderDD()}));
+    if(ddEdit[k]){
+      const m=document.createElement('div'); m.style.cssText='width:100%;display:flex;flex-wrap:wrap;gap:4px;margin-top:4px';
+      lib[k].forEach((t,i)=>{const b=mkBtn(t.trim()+' ×','Remove from list',()=>{lib[k].splice(i,1);store('rx_lib',lib);renderLib()});b.style.color='#d00000';m.appendChild(b)});
+      box.appendChild(m);
+    }
+  });
+}
 function renderLib(){
+  renderDD();
   [['advice','advChips'],['next','nextChips']].forEach(([k,id])=>{
     const box=$(id); box.innerHTML='';
     lib[k].forEach((t,i)=>{
@@ -861,6 +887,15 @@ function restoreAll(inp){
   };
   r.readAsText(f);
 }
+
+/* Separate prints */
+function printRx(){document.body.classList.toggle('no-inv-rx',!$('invOnRx').checked);window.print()}
+function printInv(){
+  if(isEmpty($('invSec'))){alert('Investigation is empty');return}
+  document.body.classList.add('printing-inv'); window.print();
+}
+$('invOnRx').checked=load('rx_invOnRx',true);
+$('invOnRx').addEventListener('change',()=>store('rx_invOnRx',$('invOnRx').checked));
 
 /* Init */
 store('rx_meds2',meds); renderLib(); renderDoctor(); applyPrint(); renderMeds(); initDraft(); if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
