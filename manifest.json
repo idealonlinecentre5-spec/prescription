@@ -1,0 +1,20 @@
+{
+  "name": "Dr. Jihadi Hasan - Prescription",
+  "short_name": "Rx",
+  "description": "Prescription, investigation and receipt printing",
+  "id": "./index.html",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#005f73",
+  "theme_color": "#005f73",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
