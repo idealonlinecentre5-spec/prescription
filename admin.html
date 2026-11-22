@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#005f73">
+<title>Admin Panel - Prescription</title>
+<link rel="icon" href="icon.png">
+<style>
+*{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+body{margin:0;background:#eef2f6;color:#222}
+.top{background:#005f73;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.top h1{margin:0;font-size:18px}
+.top .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.btn{border:0;border-radius:6px;padding:8px 12px;font-weight:600;font-size:13px;cursor:pointer;background:#0a9396;color:#fff;text-decoration:none;display:inline-block}
+.btn.g{background:#2b9348}.btn.r{background:#d00000}.btn.o{background:#ee9b00;color:#000}.btn.w{background:#e2e8f0;color:#222}.btn.p{background:#6a4c93}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.wrap{max-width:1100px;margin:16px auto;padding:0 12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:640px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:#fff;border-radius:10px;padding:12px;box-shadow:0 1px 5px #0001;text-align:center;cursor:pointer;border:2px solid transparent}
+.stat.on{border-color:#005f73}
+.stat b{display:block;font-size:24px;color:#005f73}.stat span{font-size:12px;color:#555}
+.card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 5px #0001}
+input.s{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse}
+th{background:#005f73;color:#fff;font-size:12px;padding:8px;text-align:left;white-space:nowrap}
+td{padding:8px;border-bottom:1px solid #e2e8f0;font-size:13px;vertical-align:top}
+.tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.tag.pending{background:#fff3cd;color:#8a6d00}.tag.approved{background:#d1e7dd;color:#0f5132}.tag.blocked{background:#f8d7da;color:#842029}.tag.admin{background:#e0d4f5;color:#4a2c82}
+.acts{display:flex;gap:4px;flex-wrap:wrap}
+.tw{overflow-x:auto}
+#login{max-width:380px;margin:60px auto;background:#fff;border-radius:12px;padding:22px;box-shadow:0 4px 15px #0002;text-align:center}
+#login input{width:100%;padding:11px;margin:6px 0;border:1px solid #cbd5e1;border-radius:8px;font-size:15px}
+#login h2{color:#005f73;margin:0 0 10px}
+#msg{color:#c62828;font-size:13px;min-height:18px;margin:6px 0}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="login" class="hide">
+  <h2>🛡 Admin Login</h2>
+  <form id="lf">
+    <input id="em" type="email" placeholder="Admin email" autocomplete="username" required>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+    <div id="msg"></div>
+    <button class="btn" style="width:100%;padding:12px;font-size:15px">Login</button>
+  </form>
+  <p style="margin-top:14px"><a href="index.html" style="font-size:13px">← প্রেসক্রিপশন অ্যাপে ফিরুন</a></p>
+</div>
+
+<div id="loading" style="text-align:center;padding:80px 10px;color:#555">লোড হচ্ছে...</div>
+
+<div id="panel" class="hide">
+  <div class="top">
+    <h1>🛡 Admin Panel — Doctor Accounts</h1>
+    <div class="r"><span id="who"></span><a class="btn w" href="index.html">অ্যাপ</a><button class="btn r" id="out">Logout</button></div>
+  </div>
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat" data-f="all"><b id="nAll">0</b><span>মোট</span></div>
+      <div class="stat" data-f="pending"><b id="nPen">0</b><span>অনুমোদনের অপেক্ষায়</span></div>
+      <div class="stat" data-f="approved"><b id="nApp">0</b><span>অনুমোদিত</span></div>
+      <div class="stat" data-f="blocked"><b id="nBlk">0</b><span>ব্লক</span></div>
+    </div>
+    <div class="card">
+      <input class="s" id="q" placeholder="নাম, ইমেইল, মোবাইল বা BMDC দিয়ে খুঁজুন...">
+      <div id="err" style="color:#c62828;font-size:13px"></div>
+      <div class="tw"><table>
+        <thead><tr><th>নাম / ডিগ্রি</th><th>ইমেইল</th><th>মোবাইল</th><th>BMDC</th><th>তারিখ</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+    </div>
+    <p style="font-size:12px;color:#666">নোট: "প্রোফাইল মুছুন" শুধু এখানকার রেকর্ড মুছে। লগইন অ্যাকাউন্ট (Authentication) পুরোপুরি মুছতে Firebase Console → Authentication → Users থেকে মুছতে হবে। রোগীর ডেটা অ্যাডমিন দেখতে পায় না।</p>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, A, F } from './firebase-config.js';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let me=null, users=[], filter='all', unsub=null, loginNote='';
+
+function show(v){['loading','login','panel'].forEach(x=>$(x).classList.toggle('hide',x!==v))}
+
+A.onAuthStateChanged(auth, async u=>{
+  if(unsub){unsub();unsub=null}
+  if(!u){me=null;show('login');$('msg').textContent=loginNote;loginNote='';return}
+  show('loading');
+  try{
+    const s=await F.getDoc(F.doc(db,'users',u.uid));
+    if(!s.exists()||s.data().role!=='admin'){loginNote='এই অ্যাকাউন্টটি অ্যাডমিন নয়।';await A.signOut(auth);return}
+    me={uid:u.uid,...s.data()};
+    $('who').textContent=me.name||me.email;
+    show('panel');
+    unsub=F.onSnapshot(F.collection(db,'users'),
+      snap=>{users=snap.docs.map(d=>({id:d.id,...d.data()}));$('err').textContent='';render()},
+      e=>{$('err').textContent='ডেটা লোড হয়নি: '+(e.code||e.message)});
+  }catch(e){loginNote='ত্রুটি: '+(e.code||e.message);await A.signOut(auth)}
+});
+
+$('lf').onsubmit=async e=>{
+  e.preventDefault();$('msg').textContent='';
+  try{await A.signInWithEmailAndPassword(auth,$('em').value.trim(),$('pw').value)}
+  catch(err){$('msg').textContent=err.code==='auth/invalid-credential'?'ইমেইল বা পাসওয়ার্ড ভুল':'ত্রুটি: '+(err.code||err.message)}
+};
+$('out').onclick=()=>A.signOut(auth);
+
+document.querySelectorAll('.stat').forEach(s=>s.onclick=()=>{filter=s.dataset.f;render()});
+$('q').oninput=render;
+
+const fmt=t=>{try{return t.toDate().toLocaleDateString('en-GB')}catch(e){return ''}};
+function render(){
+  const cnt=s=>users.filter(u=>(u.status||'pending')===s).length;
+  $('nAll').textContent=users.length;$('nPen').textContent=cnt('pending');$('nApp').textContent=cnt('approved');$('nBlk').textContent=cnt('blocked');
+  document.querySelectorAll('.stat').forEach(s=>s.classList.toggle('on',s.dataset.f===filter));
+  document.title=(cnt('pending')?'('+cnt('pending')+') ':'')+'Admin Panel - Prescription';
+  const q=$('q').value.toLowerCase().trim();
+  const list=users
+    .filter(u=>filter==='all'||(u.status||'pending')===filter)
+    .filter(u=>!q||[u.name,u.email,u.phone,u.bmdc].join(' ').toLowerCase().includes(q))
+    .sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  $('rows').innerHTML=list.length?list.map(u=>{
+    const st=u.status||'pending', self=u.id===me.uid, isAd=u.role==='admin';
+    return `<tr>
+      <td><b>${esc(u.name)||'—'}</b>${isAd?' <span class="tag admin">ADMIN</span>':''}<br><small>${esc(u.degree)}</small></td>
+      <td>${esc(u.email)}</td><td>${esc(u.phone)}</td><td>${esc(u.bmdc)}</td><td>${fmt(u.createdAt)}</td>
+      <td><span class="tag ${st}">${{pending:'অপেক্ষায়',approved:'অনুমোদিত',blocked:'ব্লক'}[st]||st}</span></td>
+      <td><div class="acts">
+        ${st!=='approved'?`<button class="btn g" data-a="approved" data-id="${u.id}">✔ অনুমোদন</button>`:''}
+        ${st!=='blocked'?`<button class="btn o" data-a="blocked" data-id="${u.id}" ${self?'disabled':''}>⛔ ব্লক</button>`:''}
+        ${st==='approved'?`<button class="btn w" data-a="pending" data-id="${u.id}" ${self?'disabled':''}>⏸ অপেক্ষায়</button>`:''}
+        <button class="btn p" data-a="${isAd?'unadmin':'admin'}" data-id="${u.id}" ${self?'disabled':''}>${isAd?'অ্যাডমিন সরান':'অ্যাডমিন করুন'}</button>
+        <button class="btn r" data-a="del" data-id="${u.id}" ${self?'disabled':''}>🗑 প্রোফাইল মুছুন</button>
+      </div></td></tr>`}).join(''):'<tr><td colspan="7" style="text-align:center;color:#777;padding:20px">কোনো ইউজার নেই</td></tr>';
+}
+
+$('rows').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-a]');if(!b||b.disabled)return;
+  const id=b.dataset.id,a=b.dataset.a,u=users.find(x=>x.id===id);if(!u||id===me.uid)return;
+  const ref=F.doc(db,'users',id);
+  try{
+    if(a==='approved')await F.updateDoc(ref,{status:'approved',approvedAt:F.serverTimestamp()});
+    else if(a==='blocked'){if(confirm((u.name||u.email)+' কে ব্লক করবেন?'))await F.updateDoc(ref,{status:'blocked'})}
+    else if(a==='pending')await F.updateDoc(ref,{status:'pending'});
+    else if(a==='admin'){if(confirm((u.name||u.email)+' কে অ্যাডমিন বানাবেন? সে সব ইউজার নিয়ন্ত্রণ করতে পারবে।'))await F.updateDoc(ref,{role:'admin',status:'approved'})}
+    else if(a==='unadmin'){if(confirm('অ্যাডমিন অধিকার সরাবেন?'))await F.updateDoc(ref,{role:'doctor'})}
+    else if(a==='del'){if(confirm((u.name||u.email)+' এর প্রোফাইল মুছবেন? এটি ফেরানো যাবে না।'))await F.deleteDoc(ref)}
+  }catch(err){alert('ব্যর্থ: '+(err.code||err.message))}
+});
+</script>
+</body>
+</html>
