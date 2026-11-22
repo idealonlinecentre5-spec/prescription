@@ -572,11 +572,11 @@ body.locked .navbar,body.locked .container,body.locked #pvBar{display:none!impor
             </div>
             <div id="calcNotes" class="no-print" style="font-size:12px;margin-top:6px"></div>
             <div class="form-group adv-sec" style="margin-top:15px"><label>Advice</label>
-              <div class="qchips no-print" id="advChips"></div>
+              <div class="qchips no-print" data-t="advice" id="advChips"></div>
               <textarea id="advice" rows="3" placeholder="• Advice" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:4px;line-height:1.5;overflow:hidden"></textarea>
               <button type="button" class="btn btn-add mini no-print" style="margin-top:4px" onclick="saveAdvice()">+ Save lines to list</button></div>
             <div class="form-group adv-sec"><label>Next Visit</label>
-              <div class="qchips no-print" id="nextChips"></div>
+              <div class="qchips no-print" data-t="next" id="nextChips"></div>
               <input id="nextVisit">
               <button type="button" class="btn btn-add mini no-print" style="margin-top:4px" onclick="saveNext()">+ Save to list</button></div>
             <div class="signature-area"><div class="signature-line">Signature</div></div>
@@ -1015,11 +1015,11 @@ const mkBtn=(t,title,fn)=>{const b=document.createElement('button');b.type='butt
 const ddEdit={};
 function renderDD(){
   document.querySelectorAll('.qchips[data-t]').forEach(box=>{
-    const k=box.dataset.t,nm={cc:'complaint',oe:'finding',inv:'investigation'}[k]; box.innerHTML='';
+    const k=box.dataset.t,nm={cc:'complaint',oe:'finding',inv:'investigation',advice:'advice',next:'next visit'}[k]; box.innerHTML='';
     const sel=document.createElement('select');
     sel.style.cssText='flex:1;min-width:0;padding:5px;border:1px solid #94d2bd;border-radius:4px;font-size:12px;background:#e9f5f2;color:#005f73';
     sel.innerHTML='<option value="">+ Select '+nm+'</option>'+lib[k].map((t,i)=>`<option value="${i}">${esc(t.trim().replace(/:$/,''))}</option>`).join('');
-    sel.onchange=()=>{if(sel.value!==''){addLine(k,lib[k][+sel.value]);sel.value=''}};
+    sel.onchange=()=>{if(sel.value!==''){const t=lib[k][+sel.value];if(k==='next'){$('nextVisit').value=t;saveDraft()}else addLine(k,t);sel.value=''}};
     box.append(sel,
       mkBtn('+','Add new to list',()=>{const t=prompt('New '+nm+':');if(t&&addToLib(k,t)){store('rx_lib',lib);renderLib()}}),
       mkBtn('✎','Edit list',()=>{ddEdit[k]=!ddEdit[k];renderDD()}));
@@ -1030,20 +1030,7 @@ function renderDD(){
     }
   });
 }
-function renderLib(){
-  renderDD();
-  [['advice','advChips'],['next','nextChips']].forEach(([k,id])=>{
-    const box=$(id); box.innerHTML='';
-    lib[k].forEach((t,i)=>{
-      const w=document.createElement('span'); w.className='ch2';
-      const b=document.createElement('button'); b.type='button'; b.textContent=t;
-      b.onclick=()=>k==='advice'?addLine('advice',t):($('nextVisit').value=t);
-      const x=document.createElement('button'); x.type='button'; x.textContent='×'; x.title='Remove from list';
-      x.onclick=()=>{lib[k].splice(i,1);store('rx_lib',lib);renderLib()};
-      w.append(b,x); box.appendChild(w);
-    });
-  });
-}
+function renderLib(){renderDD()}
 function addToLib(k,t){
   t=t.trim(); if(!t||lib[k].some(x=>x.toLowerCase()===t.toLowerCase()))return 0;
   lib[k].push(t); return 1;
